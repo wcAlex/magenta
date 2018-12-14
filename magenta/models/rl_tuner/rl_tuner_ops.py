@@ -29,7 +29,7 @@ import tensorflow as tf
 LSTM_STATE_NAME = 'lstm'
 
 # Number of output note classes. This is a property of the dataset.
-NUM_CLASSES = 38
+NUM_CLASSES = 40
 
 # Default batch size.
 BATCH_SIZE = 128
@@ -107,6 +107,22 @@ def basic_rnn_hparams():
   return tf.contrib.training.HParams(batch_size=128,
                                      rnn_layer_sizes=[512, 512],
                                      one_hot_length=NUM_CLASSES)
+
+
+def attention_rnn_hparams():
+  hparams_dict = {
+        'batch_size': 128,
+        'rnn_layer_sizes': [128, 128],
+        'dropout_keep_prob': 0.5,
+        'attn_length': 40,
+        'clip_norm': 3,
+        'learning_rate': 0.001,
+        'residual_connections': False,
+        'use_cudnn': False,
+        'one_hot_length': NUM_CLASSES
+  }
+  hparams = tf.contrib.training.HParams(**hparams_dict)
+  return hparams
 
 
 def default_dqn_hparams():

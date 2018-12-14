@@ -80,9 +80,13 @@ tf.app.flags.DEFINE_string('algorithm', 'q',
 
 
 def main(_):
-  hparams = (rl_tuner_ops.basic_rnn_hparams()
-             if FLAGS.note_rnn_type == 'basic_rnn'
-             else rl_tuner_ops.default_hparams())
+
+
+  hparams = rl_tuner_ops.default_hparams()
+  if FLAGS.note_rnn_type == 'basic_rnn':
+      hparams = rl_tuner_ops.basic_rnn_hparams()
+  elif FLAGS.note_rnn_type == 'attention_rnn':
+      hparams = rl_tuner_ops.attention_rnn_hparams()
 
   dqn_hparams = tf.contrib.training.HParams(random_action_probability=0.1,
                                             store_every_nth=1,
@@ -127,8 +131,8 @@ def main(_):
 
   tf.logging.info('Calculating music theory metric stats for 1000 '
                   'compositions.')
-  rlt.evaluate_music_theory_metrics(num_compositions=1000)
-
+  statistics = rlt.evaluate_music_theory_metrics(num_compositions=1000)
+  print("music theory evaluation statistic: {0}".format(statistics))
 
 def console_entry_point():
   tf.app.run(main)

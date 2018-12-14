@@ -97,6 +97,9 @@ class NoteRNNLoader(object):
       tf.logging.info('Empty hparams string. Using defaults')
       self.hparams = rl_tuner_ops.default_hparams()
 
+    initial_vars = rl_tuner_ops.get_variable_names(self.graph, self.scope)
+    print('initial_vars are {0}'.format(initial_vars))
+
     self.build_graph()
     self.state_value = self.get_zero_state()
 
@@ -172,6 +175,32 @@ class NoteRNNLoader(object):
 
     return var_dict
 
+  def get_variable_name_dict_for_attention_rnn(self):
+    """Constructs a dict mapping the checkpoint variables to those in new graph.
+
+    Returns:
+      A dict mapping variable names in the checkpoint to variables in the graph.
+    """
+
+    var_dict = dict()
+    if self.note_rnn_type != 'attention_rnn':
+        return var_dict
+
+    print("Global vars : {0}".format(tf.global_variables()))
+
+    for var in self.variables():
+      inner_name = rl_tuner_ops.get_inner_scope(var.name)
+      inner_name = rl_tuner_ops.trim_variable_postfixes(inner_name)
+      if '/Adam' in var.name:
+        # TODO(lukaszkaiser): investigate the problem here and remove this hack.
+        pass
+      elif 'fully_connected/bias' in var.name:
+        var_dict['fully_connected/biases'] = var
+      elif 'fully_connected/weights' in var.name:
+        var_dict['fully_connected/weights'] = var
+
+    return var_dict
+
   def build_graph(self):
     """Constructs the portion of the graph that belongs to this model."""
 
@@ -197,6 +226,9 @@ class NoteRNNLoader(object):
           self.initial_state = tf.placeholder(tf.float32,
                                               [None, self.cell.state_size],
                                               name='initial_state')
+
+          global_vars = tf.global_variables()
+          print("Global_vars in build graph : {0}".format(global_vars))
 
           if self.training_file_list is not None:
             # Set up a tf queue to read melodies from the training data tfrecord
@@ -247,6 +279,9 @@ class NoteRNNLoader(object):
 
           self.run_network_on_melody = run_network_on_melody
 
+        global_vars = tf.global_variables()
+        print("Global_vars in build graph : {0}".format(global_vars))
+
         if self.training_file_list is not None:
           # Does not recreate the model architecture but rather uses it to feed
           # data from the training queue through the model.
@@ -267,7 +302,8 @@ class NoteRNNLoader(object):
     """
     tf.logging.info('Restoring variables from checkpoint')
 
-    var_dict = self.get_variable_name_dict()
+    #var_dict = self.get_variable_name_dict()
+    var_dict = self.get_variable_name_dict_for_attention_rnn()
     with self.graph.as_default():
       saver = tf.train.Saver(var_list=var_dict)
 
